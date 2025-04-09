@@ -100,7 +100,7 @@ export default function WorkoutFeed() {
   if (loading) return <p>Laster treningsøkter...</p>;
 
   return (
-    <div className="">
+    <div className="flex flex-col items-center justify-center">
       <label className="flex items-center gap-2 mb-4">
         <input
           type="checkbox"
@@ -118,7 +118,7 @@ export default function WorkoutFeed() {
           return (
             <div
               key={w.id}
-              className="relative rounded-xl bg-black text-white shadow-xl mb-6 p-4 space-y-2"
+              className="relative rounded-xl bg-black text-white shadow-xl mb-6 p-4 space-y-2 border-white md:w-5/12 md:h-5/12"
             >
               {user?.id === w.user_id && (
                 <div className="absolute top-2 right-2 text-white">
