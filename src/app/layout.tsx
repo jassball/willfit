@@ -1,11 +1,10 @@
-// app/layout.tsx
-import './globals.css';
-import type { Metadata } from 'next';
-import { AuthProvider } from '@/components/AuthProvider';
+import "./globals.css";
+import type { Metadata } from "next";
+import { AuthProvider } from "@/components/AuthProvider";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export const metadata: Metadata = {
-  title: 'Willfit',
-  description: 'Din personlige fitness-tracker',
+  title: "Willfit",
 };
 
 export default function RootLayout({
@@ -16,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ProtectedRoute>{children}</ProtectedRoute>
+        </AuthProvider>
       </body>
     </html>
   );
