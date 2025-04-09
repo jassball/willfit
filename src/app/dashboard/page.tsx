@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
-import { WorkoutForm, WorkoutFeed, useAuth, Navbar } from "@/components";
+import { WorkoutFeed, useAuth, Navbar } from "@/components";
 
 export default function DashboardPage() {
   const { user } = useAuth();
