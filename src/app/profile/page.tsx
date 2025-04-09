@@ -18,6 +18,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
   // 🟢 Hent eksisterende profil hvis den finnes
   useEffect(() => {
     const fetchProfile = async () => {
@@ -58,6 +60,26 @@ export default function ProfilePage() {
     setError("");
     setLoading(true);
 
+    let avatarUrl = "";
+
+    if (avatarFile && user) {
+      const ext = avatarFile.name.split(".").pop();
+      const fileName = `${user.id}_${Date.now()}.${ext}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, avatarFile);
+
+      if (uploadError) {
+        setError("Kunne ikke laste opp bilde: " + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      avatarUrl = filePath;
+    }
+
     const { error } = await supabase.from("profiles").upsert({
       id: user?.id,
       first_name: firstName,
@@ -66,6 +88,7 @@ export default function ProfilePage() {
       email,
       gender,
       birthdate,
+      avatar_url: avatarUrl || undefined,
     });
 
     setLoading(false);
@@ -83,6 +106,15 @@ export default function ProfilePage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-6 rounded-xl shadow w-full max-w-md">
         <h1 className="text-xl font-bold mb-4 text-center">Din profil</h1>
+        <div className="mb-4">
+          <label className="block font-medium mb-1">Profilbilde</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+            className="w-full"
+          />
+        </div>
 
         <input
           placeholder="Fornavn"

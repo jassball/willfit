@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
-import { WorkoutForm, WorkoutFeed, useAuth } from "@/components";
+import { WorkoutForm, WorkoutFeed, useAuth, Navbar } from "@/components";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -35,7 +35,8 @@ export default function DashboardPage() {
   if (!user || loading) return null;
 
   return (
-    <div className="p-4">
+    <div className="p-1">
+      <Navbar />
       <h1 className="text-xl font-bold">Willfit Dashboard</h1>
       {/* Økter og + knapp kommer her */}
 
@@ -43,7 +44,6 @@ export default function DashboardPage() {
         <p className="text-gray-700 mb-4">Velkommen, {profile.username}!</p>
       )}
 
-      <WorkoutForm onCreated={() => window.location.reload()} />
       <WorkoutFeed />
     </div>
   );

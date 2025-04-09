@@ -43,11 +43,11 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
         return;
       }
 
-      const { data: publicUrl } = supabase.storage
+      supabase.storage
         .from("workout-images")
         .getPublicUrl(filePath);
 
-      imageUrl = publicUrl.publicUrl;
+      imageUrl = filePath;
     }
 
     // 🟢 Legg inn økta i databasen
