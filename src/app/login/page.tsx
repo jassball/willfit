@@ -52,7 +52,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-sm w-full bg-white p-6 rounded-xl shadow">
-        <h1 className="text-xl font-bold mb-4 text-center">
+        <h1 className="text-xl font-bold mb-4 text-center text-black">
           Logg inn / Registrer med mobilnummer
         </h1>
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
               placeholder="6-sifret kode"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full p-3 border rounded mb-3"
+              className="w-full p-3 border rounded mb-3 text-black"
             />
             {errorMsg && (
               <p className="text-red-600 text-sm mb-3">{errorMsg}</p>

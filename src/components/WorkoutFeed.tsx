@@ -28,13 +28,17 @@ export default function WorkoutFeed() {
   const [ownOnly, setOwnOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const { data } = supabase.storage
-    .from("workout-images")
-    .getPublicUrl(
-      "workouts/182d5ad5-c035-4d6c-a2e9-6ca6965b3c5d_1744116388695.png"
-    );
+  const handleDelete = async (id: string) => {
+    const confirmed = confirm("Er du sikker på at du vil slette denne økten?");
+    if (!confirmed) return;
 
-  console.log("bæsj" + data.publicUrl);
+    const { error } = await supabase.from("workouts").delete().eq("id", id);
+    if (error) {
+      alert("Kunne ikke slette økten: " + error.message);
+    } else {
+      setWorkouts((prev) => prev.filter((w) => w.id !== id));
+    }
+  };
 
   useEffect(() => {
     const fetchWorkouts = async () => {
@@ -114,8 +118,20 @@ export default function WorkoutFeed() {
           return (
             <div
               key={w.id}
-              className="rounded-xl bg-black text-white shadow-xl mb-6 p-4 space-y-2"
+              className="relative rounded-xl bg-black text-white shadow-xl mb-6 p-4 space-y-2"
             >
+              {user?.id === w.user_id && (
+                <div className="absolute top-2 right-2 text-white">
+                  <button
+                    onClick={() => handleDelete(w.id)}
+                    className="text-white text-xl"
+                    title="Slett"
+                  >
+                    ⋯
+                  </button>
+                </div>
+              )}
+
               {/* Brukerinfo */}
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
