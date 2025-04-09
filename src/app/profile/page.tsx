@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
+import { Navbar } from "@/components";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -104,6 +105,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <Navbar />
       <div className="bg-white p-6 rounded-xl shadow w-full max-w-md">
         <h1 className="text-xl font-bold mb-4 text-center">Din profil</h1>
         <div className="mb-4">
