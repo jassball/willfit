@@ -69,7 +69,7 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
         note,
         pr,
         image_url: imageUrl || null,
-        date, // 🔵 Legg til dato her
+        date,
       },
     ]);
 

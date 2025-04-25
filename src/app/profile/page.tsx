@@ -123,12 +123,12 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
         <Navbar />
-        <div className="bg-white p-6 rounded-xl shadow w-full max-w-md text-center ">
+        <div className="bg-white p-6 rounded-xl shadow w-full max-w-md text-center mt-24 mb-12">
           <h1 className="text-xl font-bold mb-4">Din profil</h1>
           <div className="flex justify-center">
             {/* Hent signed URL for avatar */}
             <img
-              src={avatarUrl || "/default-avatar.png"}
+              src={avatarUrl || "/avatar-modified.ico"}
               alt="Profilbilde"
               className="w-24 h-24 rounded-full shadow-lg "
             />
@@ -144,7 +144,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Navbar />
-      <div className="bg-white p-6 rounded-xl shadow w-full max-w-md mt-24">
+      <div className="bg-white p-6 rounded-xl shadow w-full max-w-md mt-24 ">
         <h1 className="text-xl font-bold mb-4 text-center text-black">
           Din profil
         </h1>
