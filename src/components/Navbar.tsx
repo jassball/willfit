@@ -56,16 +56,18 @@ export default function Navbar() {
 
       {/* Modal for WorkoutForm */}
       {showForm && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-4 w-full max-w-md relative mx-4">
-            <button
-              onClick={() => setShowForm(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-black"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 overflow-y-auto overscroll-contain">
+          <div className="min-h-screen flex items-center justify-center py-8">
+            <div className="bg-white rounded-xl p-4 w-full max-w-md relative mx-4">
+              <button
+                onClick={() => setShowForm(false)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-black"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-            <WorkoutForm onCreated={() => setShowForm(false)} />
+              <WorkoutForm onCreated={() => setShowForm(false)} />
+            </div>
           </div>
         </div>
       )}

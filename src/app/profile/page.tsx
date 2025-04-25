@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
-import { Navbar } from "@/components";
+import { Navbar, WorkoutFeed } from "@/components";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   // 🟢 Hent eksisterende profil hvis den finnes
   useEffect(() => {
@@ -43,6 +44,14 @@ export default function ProfilePage() {
 
         setEmail(data.email || "");
         setInitialEmail(data.email || "");
+
+        if (data.avatar_url) {
+          const { data: signedUrlData } = await supabase.storage
+            .from("avatars")
+            .createSignedUrl(data.avatar_url, 60 * 60); // 1 time gyldig
+
+          setAvatarUrl(signedUrlData?.signedUrl || "");
+        }
       }
     };
 
@@ -103,18 +112,51 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
+  const boxStyle = "w-full p-3 border border-black rounded mb-3 text-black";
+
+  // Legg til rett etter `if (!user) return null;`
+
+  const isProfileComplete =
+    firstName && lastName && username && email && birthdate;
+
+  if (isProfileComplete) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
+        <Navbar />
+        <div className="bg-white p-6 rounded-xl shadow w-full max-w-md text-center ">
+          <h1 className="text-xl font-bold mb-4">Din profil</h1>
+          <div className="flex justify-center">
+            {/* Hent signed URL for avatar */}
+            <img
+              src={avatarUrl || "/default-avatar.png"}
+              alt="Profilbilde"
+              className="w-24 h-24 rounded-full shadow-lg "
+            />
+          </div>
+          <p className="mt-4 text-gray-700">Hei {firstName}!</p>
+        </div>
+
+        <WorkoutFeed ownOnlyByDefault={true} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Navbar />
-      <div className="bg-white p-6 rounded-xl shadow w-full max-w-md">
-        <h1 className="text-xl font-bold mb-4 text-center">Din profil</h1>
+      <div className="bg-white p-6 rounded-xl shadow w-full max-w-md mt-24">
+        <h1 className="text-xl font-bold mb-4 text-center text-black">
+          Din profil
+        </h1>
         <div className="mb-4">
-          <label className="block font-medium mb-1">Profilbilde</label>
+          <label className="block font-medium mb-1 text-black">
+            Profilbilde
+          </label>
           <input
             type="file"
             accept="image/*"
             onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
-            className="w-full"
+            className="w-full bg-[linear-gradient(to_right,_black_23%,_#d1d5db_20%)] rounded-sm text-white p-3 "
           />
         </div>
 
@@ -122,20 +164,20 @@ export default function ProfilePage() {
           placeholder="Fornavn"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          className="w-full p-3 border rounded mb-3"
+          className={boxStyle}
         />
         <input
           placeholder="Etternavn"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          className="w-full p-3 border rounded mb-3"
+          className={boxStyle}
         />
         <input
           placeholder="Brukernavn"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           readOnly={isUsernameSet}
-          className={`w-full p-3 border rounded mb-3 ${
+          className={`${boxStyle} ${
             isUsernameSet ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""
           }`}
         />
@@ -146,7 +188,7 @@ export default function ProfilePage() {
           value={email}
           readOnly={isEmailSet}
           onChange={(e) => setEmail(e.target.value)}
-          className={`w-full p-3 border rounded mb-3 ${
+          className={`${boxStyle}  ${
             isEmailSet ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""
           }`}
         />
@@ -161,9 +203,10 @@ export default function ProfilePage() {
         <input
           type="date"
           value={birthdate}
+          placeholder="Fødselsdato"
           onChange={(e) => setBirthdate(e.target.value)}
           readOnly={isBirthdateSet}
-          className={`w-full p-3 border rounded mb-3 ${
+          className={`${boxStyle} 3 ${
             isBirthdateSet ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""
           }`}
         />
@@ -171,7 +214,7 @@ export default function ProfilePage() {
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value)}
-          className="w-full p-3 border rounded mb-3"
+          className={boxStyle}
         >
           <option value="">Velg kjønn</option>
           <option value="mann">Mann</option>
@@ -188,7 +231,10 @@ export default function ProfilePage() {
         >
           {loading ? "Lagrer..." : "Lagre og fortsett"}
         </button>
+
+        <WorkoutFeed ownOnlyByDefault={true} />
       </div>
+      <h1>hei</h1>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
-import { FaCamera } from "react-icons/fa";
 import Image from "next/image";
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
+import { format, subDays } from "date-fns";
+import { nb } from "date-fns/locale";
 
 export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
   const { user } = useAuth();
@@ -15,6 +16,18 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
   const [error, setError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // 🔵 Legg til state for dato
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+
+  // 🔵 Lag liste over dagens dato og seks dager bakover
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = subDays(new Date(), i);
+    return {
+      value: format(d, "yyyy-MM-dd"),
+      label: format(d, "EEEE d. MMMM", { locale: nb }),
+    };
+  });
 
   const handleSubmit = async () => {
     if (!type) {
@@ -43,9 +56,7 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
         return;
       }
 
-      supabase.storage
-        .from("workout-images")
-        .getPublicUrl(filePath);
+      supabase.storage.from("workout-images").getPublicUrl(filePath);
 
       imageUrl = filePath;
     }
@@ -58,6 +69,7 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
         note,
         pr,
         image_url: imageUrl || null,
+        date, // 🔵 Legg til dato her
       },
     ]);
 
@@ -75,31 +87,30 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow mb-6">
-      <h2 className="text-lg font-semibold mb-4">Logg ny treningsøkt</h2>
+    <div className="bg-white p-4 rounded-xl shadow mb-6 text-black">
+      <h2 className="text-lg font-semibold mb-4 ">Logg ny treningsøkt</h2>
       <div className="mb-3 border rounded flex flex-col items-center gap-2">
-        <div className="flex items-center gap-2 border-b-2 w-full p-3">
-          <FaCamera />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              setImageFile(file);
-              if (file) {
-                setPreviewUrl(URL.createObjectURL(file));
-              } else {
-                setPreviewUrl(null);
-              }
-            }}
-          />
-        </div>
+        <input
+          className="w-full bg-[linear-gradient(to_right,_black_23%,_#d1d5db_20%)] rounded-sm text-white p-3  "
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            setImageFile(file);
+            if (file) {
+              setPreviewUrl(URL.createObjectURL(file));
+            } else {
+              setPreviewUrl(null);
+            }
+          }}
+        />
+
         {previewUrl && (
           <Image
             src={previewUrl}
             alt="Forhåndsvisning"
-            className="w-full h-auto mb-3 rounded-lg shadow-lg"
-            width={50}
+            className=" w-full shadow-lg"
+            width={250}
             height={50}
           />
         )}
@@ -126,6 +137,20 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
           onChange={(e) => setPr(e.target.checked)}
         />
         <span>Personlig rekord (PR)?</span>
+      </label>
+      <label className="block mb-3">
+        <span className="block mb-1">Når ble økten gjennomført?</span>
+        <select
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-full p-3 border rounded"
+        >
+          {last7Days.map((d) => (
+            <option key={d.value} value={d.value}>
+              {d.label.charAt(0).toUpperCase() + d.label.slice(1)}
+            </option>
+          ))}
+        </select>
       </label>
 
       {error && <p className="text-red-600 text-sm mb-2">{error}</p>}

@@ -63,7 +63,7 @@ export default function LoginPage() {
               placeholder="+47 12345678"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full p-3 border rounded mb-3"
+              className="w-full p-3 border rounded mb-3 text-black"
             />
             {errorMsg && (
               <p className="text-red-600 text-sm mb-3">{errorMsg}</p>

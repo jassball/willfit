@@ -22,11 +22,17 @@ type Workout = {
   comments?: { id: string }[];
 };
 
-export default function WorkoutFeed() {
+export default function WorkoutFeed({
+  ownOnlyByDefault = false,
+}: {
+  ownOnlyByDefault?: boolean;
+}) {
   const { user } = useAuth();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [ownOnly, setOwnOnly] = useState(false);
+  const [ownOnly] = useState(ownOnlyByDefault);
   const [loading, setLoading] = useState(true);
+  const [cache, setCache] = useState<Workout[]>([]);
+  const [lastFetched, setLastFetched] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     const confirmed = confirm("Er du sikker på at du vil slette denne økten?");
@@ -43,7 +49,30 @@ export default function WorkoutFeed() {
   useEffect(() => {
     const fetchWorkouts = async () => {
       setLoading(true);
+
       const query = supabase
+        .from("workouts")
+        .select("id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (ownOnly && user) {
+        query.eq("user_id", user.id);
+      }
+
+      const { data: latest } = await query;
+
+      const latestCreated = latest?.[0]?.created_at || null;
+
+      if (lastFetched === latestCreated && cache.length > 0) {
+        // ✅ Data er cached og ingenting nytt
+        setWorkouts(cache);
+        setLoading(false);
+        return;
+      }
+
+      // 🟢 Hent hele datasettet
+      const fullQuery = supabase
         .from("workouts")
         .select(
           "*, profile:profiles(id, first_name, last_name, username, avatar_url), comments(id)"
@@ -51,15 +80,14 @@ export default function WorkoutFeed() {
         .order("created_at", { ascending: false });
 
       if (ownOnly && user) {
-        query.eq("user_id", user.id);
+        fullQuery.eq("user_id", user.id);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await fullQuery;
 
       if (!error && data) {
         const workoutsWithUrls = await Promise.all(
           data.map(async (w) => {
-            // Hent avatar signed URL
             let avatarSigned = "";
             if (w.profile?.avatar_url) {
               const { data: signed, error } = await supabase.storage
@@ -68,7 +96,6 @@ export default function WorkoutFeed() {
               if (signed && !error) avatarSigned = signed.signedUrl;
             }
 
-            // Hent bilde signed URL
             let imageSigned = "";
             if (w.image_url) {
               const { data: signed, error } = await supabase.storage
@@ -89,27 +116,19 @@ export default function WorkoutFeed() {
         );
 
         setWorkouts(workoutsWithUrls);
+        setCache(workoutsWithUrls);
+        setLastFetched(latestCreated);
       }
 
       setLoading(false);
     };
-
     fetchWorkouts();
-  }, [ownOnly, user]);
+  }, [ownOnly, user, lastFetched, cache]);
 
   if (loading) return <p>Laster treningsøkter...</p>;
 
   return (
     <div className="flex flex-col items-center justify-center">
-      <label className="flex items-center gap-2 mb-4">
-        <input
-          type="checkbox"
-          checked={ownOnly}
-          onChange={(e) => setOwnOnly(e.target.checked)}
-        />
-        <span>Vis kun egne økter</span>
-      </label>
-
       {workouts.length === 0 ? (
         <p className="text-white">Ingen treningsøkter funnet.</p>
       ) : (
