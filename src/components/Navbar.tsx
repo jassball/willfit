@@ -28,9 +28,9 @@ export default function Navbar() {
                 <button
                   key="action"
                   onClick={() => setShowForm(true)}
-                  className="p-3 bg-purple-600 text-white rounded-full shadow-md scale-110"
+                  className="p-3 bg-black text-red-500 border  rounded-full shadow-md scale-100"
                 >
-                  <Icon className="w-6 h-6" />
+                  <Icon className="w-6 h-6 fill-amber-50" />
                 </button>
               );
             }
