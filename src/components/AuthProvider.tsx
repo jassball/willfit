@@ -23,9 +23,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        // 🛠 Try refreshing the session if nothing in localStorage
+        const { data: refreshData, error: refreshError } =
+          await supabase.auth.refreshSession();
+
+        if (refreshData.session) {
+          setSession(refreshData.session);
+          setUser(refreshData.session.user);
+        } else {
+          console.warn("Session could not be refreshed:", refreshError);
+          setSession(null);
+          setUser(null);
+        }
+      } else {
+        setSession(sessionData.session);
+        setUser(sessionData.session.user);
+      }
       setLoading(false);
     };
 
