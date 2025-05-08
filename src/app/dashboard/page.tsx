@@ -35,7 +35,7 @@ export default function DashboardPage() {
   if (!user || loading) return null;
 
   return (
-    <div className="p-1">
+    <div className="p-1 overflow-x-hidden">
       <Navbar />
       <h1 className="text-xl font-bold">Willfit Dashboard</h1>
       {/* Økter og + knapp kommer her */}

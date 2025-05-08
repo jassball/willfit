@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import KudosButton from "./KudosButton";
+import WorkoutInfoBox from "@/components/WorkoutInfoBox";
+import CommentSection from "@/components/CommentSection";
+import { CommentPopover } from "@/components/CommentPopover";
 
 import {
   fetchAllWorkouts,
@@ -42,6 +44,10 @@ export default function WorkoutFeed({
       }
     >
   >({});
+
+  const [openCommentWorkoutId, setOpenCommentWorkoutId] = useState<
+    string | null
+  >(null);
 
   const fetchKudosDataForWorkout = async (workoutId: string) => {
     const [count, hasGiven, users] = await Promise.all([
@@ -85,6 +91,10 @@ export default function WorkoutFeed({
     } catch {
       alert("Kunne ikke slette økten.");
     }
+  };
+
+  const toggleCommentSection = (workoutId: string) => {
+    setOpenCommentWorkoutId(workoutId);
   };
 
   useEffect(() => {
@@ -131,102 +141,90 @@ export default function WorkoutFeed({
       ) : (
         workouts.map((w) => {
           const kudos = kudosState[w.id];
+          if (!kudos) return null;
           return (
             <div
               key={w.id}
-              className="relative rounded-xl bg-black text-white shadow-xl mb-6 p-4 space-y-2 border-white md:w-5/12 md:h-5/12"
+              className="relative w-screen h-[80vh] rounded-none overflow-visible shadow-lg mb-24 sm:rounded-xl sm:max-w-md sm:mx-auto"
             >
+              {/* Slett-knapp */}
               {user?.id === w.user_id && (
-                <div className="absolute top-2 right-2 text-white">
-                  <button
-                    onClick={() => handleDelete(w.id)}
-                    className="text-white text-xl"
-                    title="Slett"
-                  >
-                    ⋯
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleDelete(w.id)}
+                  className="absolute top-4 right-4 text-white text-2xl"
+                  title="Slett"
+                >
+                  ⋯
+                </button>
               )}
 
-              {/* Brukerinfo */}
-              <div className="flex items-center gap-3">
+              {/* Bakgrunnsbilde */}
+              <div className="w-full h-full overflow-hidden rounded-none sm:rounded-xl">
+                <img
+                  src={w.image_url || "/default-image.jpg"}
+                  alt="Treningsbilde"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Øverst: Brukerinfo med bakgrunnsboks */}
+              <div className="absolute top-4 left-4 bg-[rgba(1,0,0,0.44)] rounded-full px-3 py-2 flex items-center gap-2 text-white shadow-md">
                 <img
                   src={w.profile.avatar_url || "/avatar-modified.ico"}
-                  alt="avatar"
-                  className="w-10 h-10 rounded-full border"
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full object-cover"
                 />
-                <div>
-                  <p className="font-semibold">
+                <div className="leading-tight">
+                  <p className="text-sm font-semibold">
                     {w.profile.first_name} {w.profile.last_name}
                   </p>
-                  <p className="text-sm text-gray-400">@{w.profile.username}</p>
+                  <p className="text-xs">@{w.profile.username}</p>
                 </div>
               </div>
 
-              {/* Treningsbilde */}
-              {w.image_url && kudos && (
-                <KudosButton
-                  workoutId={w.id}
-                  userId={user?.id || ""}
-                  isButton={false}
-                  hasGivenKudos={kudos.hasGivenKudos}
+              {/* Nederst: Overlay med metadata og handlinger */}
+              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-11/12 max-w-md">
+                <WorkoutInfoBox
+                  date={w.date}
+                  type={w.type}
+                  note={w.note}
                   kudosCount={kudos.kudosCount}
-                  kudosUsers={kudos.kudosUsers}
-                  toggleKudos={() => toggleKudosForWorkout(w.id)}
-                >
-                  <img
-                    src={w.image_url}
-                    alt="treningsbilde"
-                    className="w-full rounded-lg "
-                  />
-                </KudosButton>
-              )}
-
-              {/* Metadata */}
-              <div className="text-sm text-gray-400">
-                {new Date(w.date).toLocaleDateString("nb-NO", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </div>
-
-              {/* Tittel / PR / Notat */}
-              <div className=" items-center gap-2">
-                <p className="text-gray-400 text-sm">Økt:</p>
-                <h3 className="text-lg font-bold"> {w.type}</h3>
-              </div>
-
-              {w.pr && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                  PR!
-                </span>
-              )}
-              {w.note && (
-                <div className=" items-center gap-2">
-                  <p className="text-gray-400 text-xs">Notat:</p>
-                  <p>{w.note}</p>
-                </div>
-              )}
-
-              {/* Interaksjon */}
-              {kudos && (
-                <div className="flex gap-4 items-center pt-2 text-gray-300">
-                  <KudosButton
+                  hasGivenKudos={kudos.hasGivenKudos}
+                  onToggleKudos={() => toggleKudosForWorkout(w.id)}
+                  onCommentClick={() => toggleCommentSection(w.id)}
+                />
+                {/* Show comments below WorkoutInfoBox */}
+                <div className="mt-2">
+                  <CommentSection
                     workoutId={w.id}
-                    userId={user?.id || ""}
-                    isButton={true}
-                    hasGivenKudos={kudos.hasGivenKudos}
-                    kudosCount={kudos.kudosCount}
-                    kudosUsers={kudos.kudosUsers}
-                    toggleKudos={() => toggleKudosForWorkout(w.id)}
+                    currentUserId={user?.id || ""}
+                    workoutOwnerId={w.user_id}
+                    avatar_url={w.profile.avatar_url || "/avatar-modified.ico"}
+                    readOnly={true}
                   />
                 </div>
-              )}
+              </div>
             </div>
           );
         })
+      )}
+
+      {/* Modal for adding new comments */}
+      {openCommentWorkoutId && (
+        <CommentPopover onClose={() => setOpenCommentWorkoutId(null)}>
+          <CommentSection
+            workoutId={openCommentWorkoutId}
+            currentUserId={user?.id || ""}
+            workoutOwnerId={
+              workouts.find((w) => w.id === openCommentWorkoutId)?.user_id || ""
+            }
+            avatar_url={
+              workouts.find((w) => w.id === openCommentWorkoutId)?.profile
+                .avatar_url || "/avatar-modified.ico"
+            }
+            readOnly={false}
+          />
+        </CommentPopover>
       )}
     </div>
   );
