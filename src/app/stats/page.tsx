@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import ContestCountdown from "@/components/ContestCountdown";
 
 function getChallengeStartDate() {
-  return "2024-05-23";
+  return "2025-05-23";
 }
 
 type LeaderboardUser = {
