@@ -13,12 +13,15 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
   },
-  themeColor: "#000000",
+
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Willfit",
   },
+};
+export const viewport = {
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

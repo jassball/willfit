@@ -19,12 +19,14 @@ type CommentSectionProps = {
   workoutOwnerId: string;
   avatar_url: string | null;
   readOnly?: boolean;
+  visible?: boolean;
 };
 
 function CommentSection({
   workoutId,
   currentUserId,
   workoutOwnerId,
+  visible = true,
   readOnly = false,
 }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -110,7 +112,13 @@ function CommentSection({
     currentUserId === commentUserId || currentUserId === workoutOwnerId;
 
   return (
-    <div className="px-6 py-3 rounded-full shadow-lg backdrop-blur-sm bg-[rgba(1,0,0,0.44)] mt-2 flex flex-col gap-2">
+    <div
+      className={
+        visible
+          ? "px-6 py-3 rounded-full shadow-lg backdrop-blur-sm bg-[rgba(1,0,0,0.44)] mt-2 flex flex-col gap-2"
+          : "hidden"
+      }
+    >
       {/* Input for å legge til kommentar */}
       {!readOnly && (
         <form onSubmit={handleAddComment} className="flex items-center gap-2">
@@ -172,7 +180,7 @@ function CommentSection({
           ))}
         </div>
       ) : (
-        <div className="text-gray-500 italic"></div>
+        <p></p>
       )}
     </div>
   );

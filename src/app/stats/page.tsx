@@ -5,13 +5,10 @@ import { fetchAllWorkouts, Workout } from "@/lib/workout";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
+import ContestCountdown from "@/components/ContestCountdown";
 
-// Helper to get start of current challenge (4 weeks ago)
 function getChallengeStartDate() {
-  const now = new Date();
-  const start = new Date(now);
-  start.setDate(now.getDate() - 28); // 4 weeks ago
-  return start.toISOString().slice(0, 10);
+  return "2024-05-23";
 }
 
 type LeaderboardUser = {
@@ -31,10 +28,12 @@ export default function StatsPage() {
     async function loadLeaderboard() {
       try {
         const workouts = await fetchAllWorkouts(false);
-        const challengeStart = getChallengeStartDate();
-        // Filter workouts in challenge period
-        const filtered = workouts.filter((w) => w.date >= challengeStart);
-        // Aggregate by user
+        const challengeStart = new Date(getChallengeStartDate());
+
+        const filtered = workouts.filter(
+          (w) => new Date(w.date) >= challengeStart
+        );
+
         const userMap: Record<string, LeaderboardUser> = {};
         for (const w of filtered) {
           const uid = w.user_id;
@@ -47,10 +46,11 @@ export default function StatsPage() {
           }
           userMap[uid].count++;
         }
-        // Convert to array and sort
+
         const sorted = Object.values(userMap).sort((a, b) => b.count - a.count);
         setLeaderboard(sorted);
-      } catch {
+      } catch (error) {
+        console.error("Feil under lasting av leaderboard:", error);
         setLeaderboard([]);
       }
     }
@@ -90,71 +90,80 @@ export default function StatsPage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-black">
       <Navbar />
-      <div className="w-full max-w-md mt-10 bg-blue-400 rounded-3xl shadow-lg p-4 relative mx-auto">
-        <h1 className="text-xl font-bold text-center mb-6 text-white">
-          Vær med i konkurransen!
+      <div className="w-full max-w-md mt-10 bg-gray-900 rounded-3xl shadow-lg p-4 relative mx-auto">
+        <ContestCountdown
+          isEnlisted={isEnlisted}
+          handleEnlist={handleEnlist}
+          loadingEnlist={loadingEnlist}
+          checkedEnlistment={checkedEnlistment}
+        />
+
+        <h1 className="text-xl font-bold text-center mb-6 text-white mt-8">
+          Leaderboard
         </h1>
-        {/* Top 3 */}
-        <div className="flex justify-center items-end gap-8 mb-4">
-          {[leaderboard[1], leaderboard[0], leaderboard[2]].map((user, idx) => {
-            if (!user) return null; // Skip rendering if user is undefined
-            const trueIndex = [1, 0, 2][idx]; // maps back to original index
-            return (
-              <div
-                key={user.user_id}
-                className={`flex flex-col items-center ${
-                  trueIndex === 0 ? "mb-6" : trueIndex === 1 ? "mb-2" : "mb-1"
-                }`}
-              >
-                {/* 1st is tallest */}
+
+        <div className="bg-gray-900 rounded-2xl p-2 shadow-md">
+          {leaderboard.length === 0
+            ? [...Array(10)].map((_, idx) => (
                 <div
-                  className={`rounded-full border-4 ${
-                    trueIndex === 0
-                      ? "border-yellow-400"
-                      : trueIndex === 1
-                      ? "border-blue-200"
-                      : "border-orange-400"
-                  }`}
+                  key={idx}
+                  className="flex items-center py-3 px-3 border-b border-gray-800 last:border-b-0 animate-pulse"
                 >
-                  <AvatarImage size={16} avatarPath={user.profile.avatar_url} />
+                  <div className="w-6 text-gray-500">{idx + 1}</div>
+                  <div className="w-10 h-10 bg-gray-700 rounded-full" />
+                  <div className="ml-3 flex-1">
+                    <div className="h-4 bg-gray-700 rounded w-24 mb-1" />
+                    <div className="h-3 bg-gray-800 rounded w-16" />
+                  </div>
+                  <div className="w-8 h-4 bg-gray-700 rounded ml-auto" />
                 </div>
-                <span className="text-white font-semibold mt-2">
-                  {user.profile.first_name}
-                </span>
-                <span className="text-xs text-white">{user.count}x</span>
-                <div
-                  className={`mt-1 w-8 h-8 flex items-center justify-center rounded-t-lg ${
-                    trueIndex === 0
-                      ? "bg-yellow-400"
-                      : trueIndex === 1
-                      ? "bg-blue-200"
-                      : "bg-blue-300"
-                  }`}
-                >
-                  {trueIndex + 1}
-                </div>
-              </div>
-            );
-          })}
+              ))
+            : leaderboard.map((user, idx) => {
+                const isFirst = idx === 0;
+                return (
+                  <div
+                    key={user.user_id}
+                    className={`flex items-center ${
+                      isFirst
+                        ? "py-4 px-4 bg-gray-800 rounded-xl mb-2"
+                        : "py-3 px-3"
+                    } border-b border-gray-800 last:border-b-0 hover:bg-gray-800 transition`}
+                  >
+                    <div
+                      className={`w-6 text-gray-400 ${
+                        isFirst ? "text-lg font-bold" : ""
+                      }`}
+                    >
+                      {idx + 1}
+                    </div>
+                    <AvatarImage
+                      avatarPath={user.profile.avatar_url}
+                      size={isFirst ? 16 : 10}
+                    />
+                    <div className="ml-3 flex-1">
+                      <div
+                        className={`text-white ${
+                          isFirst ? "text-lg font-semibold" : "font-medium"
+                        }`}
+                      >
+                        {user.profile.first_name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        @{user.profile.username || "bruker"}
+                      </div>
+                    </div>
+                    <div
+                      className={`ml-auto text-white ${
+                        isFirst ? "text-xl font-extrabold" : "font-bold"
+                      }`}
+                    >
+                      {user.count}x
+                    </div>
+                  </div>
+                );
+              })}
         </div>
 
-        {/* List */}
-        <div className="bg-white rounded-2xl p-2 shadow-md">
-          {leaderboard.slice(3).map((user, idx) => (
-            <div
-              key={user.user_id}
-              className="flex items-center py-2 px-2 border-b last:border-b-0"
-            >
-              <span className="w-6 text-black 0">{idx + 4}</span>
-              <AvatarImage avatarPath={user.profile.avatar_url} />
-              <span className="ml-2 flex-1 text-black">
-                {user.profile.first_name}
-              </span>
-              <span className="text-black">{user.count}x</span>
-            </div>
-          ))}
-        </div>
-        {/* Only show the button if enlistment check is done and user is not enlisted */}
         {checkedEnlistment && !isEnlisted && (
           <button
             className="w-full mt-6 bg-blue-500 text-white py-3 rounded-full font-semibold text-lg disabled:opacity-60"

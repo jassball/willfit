@@ -10,6 +10,7 @@ interface WorkoutInfoBoxProps {
   onToggleKudos: () => void;
   commentCount?: number;
   onCommentClick: () => void;
+  noImage?: boolean;
 }
 
 const WorkoutInfoBox: React.FC<WorkoutInfoBoxProps> = ({
@@ -21,8 +22,15 @@ const WorkoutInfoBox: React.FC<WorkoutInfoBoxProps> = ({
   onToggleKudos,
   commentCount = 0,
   onCommentClick,
+  noImage = false,
 }) => (
-  <div className="flex justify-between items-center px-6 py-3 rounded-full shadow-lg backdrop-blur-sm bg-[rgba(1,0,0,0.44)]">
+  <div
+    className={
+      noImage
+        ? "flex justify-between items-center px-6 py-3  shadow-lg backdrop-blur-sm bg-[rgba(1,0,0,0.44)]"
+        : "flex justify-between items-center px-6 py-3 rounded-full shadow-lg backdrop-blur-sm bg-[rgba(1,0,0,0.44)]"
+    }
+  >
     {/* Left side: date, type, note */}
     <div className="flex flex-col items-start">
       <span className="text-xs text-white opacity-80">

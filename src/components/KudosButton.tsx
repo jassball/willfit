@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PiHandsClapping, PiHeartFill } from "react-icons/pi";
+import { FaRegHeart, FaHeart } from "react-icons/fa";
 
 type KudosButtonProps = {
   workoutId?: string;
@@ -37,37 +37,35 @@ function KudosButton({
           variant === "heart" ? (
             <button
               onClick={handleToggleKudos}
-              className="relative text-xl focus:outline-none"
+              className="relative w-10 h-10 focus:outline-none"
               title="Gi kudos"
-              style={{ width: 48, height: 48 }}
             >
-              <span className="block relative w-12 h-12">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 48 48"
-                  fill={hasGivenKudos ? "#f87171" : "none"}
-                  stroke={hasGivenKudos ? "#f87171" : "#fff"}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="inline-block align-middle"
-                >
-                  <path d="M35.25 8.25c-3.75 0-6.75 3-6.75 6.75 0-3.75-3-6.75-6.75-6.75C13.5 8.25 10.5 11.25 10.5 15c0 10.5 13.5 18 13.5 18s13.5-7.5 13.5-18c0-3.75-3-6.75-6.75-6.75z" />
-                </svg>
-                <span
-                  className={`absolute inset-0 flex items-center justify-center text-base font-bold pointer-events-none select-none ${
-                    hasGivenKudos ? "text-white" : "text-red-400"
+              {/* Statisk eller "tomt" hjerte */}
+              {!hasGivenKudos && (
+                <FaRegHeart
+                  className={`absolute inset-0 text-white w-full h-full transition-opacity duration-300 ${
+                    showHeart ? "opacity-0" : "opacity-100"
                   }`}
-                >
-                  {kudosCount}
-                </span>
-              </span>
-              {showHeart && (
-                <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <PiHeartFill className="text-red-500 w-16 h-16 animate-ping" />
-                </span>
+                />
               )}
+
+              {/* Fylte hjerte ved reaksjon eller hvis man har gitt kudos */}
+              {(hasGivenKudos || showHeart) && (
+                <FaHeart
+                  className={`absolute inset-0 w-full h-full text-red-500 ${
+                    showHeart ? "animate-ping z-20" : ""
+                  }`}
+                />
+              )}
+
+              {/* Antall kudos */}
+              <span
+                className={`absolute inset-0 flex items-center justify-center text-base font-bold pointer-events-none select-none ${
+                  hasGivenKudos ? "text-white" : "text-red-400"
+                }`}
+              >
+                {kudosCount}
+              </span>
             </button>
           ) : (
             <button
@@ -77,9 +75,7 @@ function KudosButton({
                   ? "bg-red-400 hover:bg-green-600"
                   : "bg-gray-100 hover:bg-blue-600"
               } text-black`}
-            >
-              <PiHandsClapping />({kudosCount})
-            </button>
+            ></button>
           )
         ) : (
           <div
@@ -92,9 +88,7 @@ function KudosButton({
           >
             {children}
             {showHeart && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <PiHeartFill className="text-red-500 w-16 h-16 animate-ping" />
-              </div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none"></div>
             )}
           </div>
         )}
@@ -106,7 +100,6 @@ function KudosButton({
             key={user.user_id}
             className="flex items-center gap-1 bg-gray-800 px-2 py-1 rounded-sm"
           >
-            <PiHandsClapping className="w-3 h-3" />
             <span>{user.username.slice(0, 5)}</span>
           </div>
         ) : null
