@@ -116,8 +116,7 @@ export default function ProfilePage() {
 
   // Legg til rett etter `if (!user) return null;`
 
-  const isProfileComplete =
-    firstName && lastName && username && email && birthdate;
+  const isProfileComplete = firstName && lastName && username && email;
 
   if (isProfileComplete) {
     return (
@@ -202,11 +201,11 @@ export default function ProfilePage() {
         />
         <input
           type="date"
-          value={birthdate}
+          value={birthdate ?? ""}
           placeholder="Fødselsdato"
           onChange={(e) => setBirthdate(e.target.value)}
           readOnly={isBirthdateSet}
-          className={`${boxStyle} 3 ${
+          className={`${boxStyle} ${
             isBirthdateSet ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""
           }`}
         />
