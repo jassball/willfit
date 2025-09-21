@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
+import { useCreateWorkout } from "@/hooks/useWorkouts";
 import { format, subDays } from "date-fns";
 import { nb } from "date-fns/locale";
 
@@ -12,10 +13,12 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
   const [type, setType] = useState("");
   const [note, setNote] = useState("");
   const [pr, setPr] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // TanStack Query mutation
+  const createWorkoutMutation = useCreateWorkout();
 
   // 🔵 Legg til state for dato
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -35,7 +38,6 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
       return;
     }
 
-    setLoading(true);
     setError("");
 
     let imageUrl = "";
@@ -52,115 +54,162 @@ export default function WorkoutForm({ onCreated }: { onCreated?: () => void }) {
 
       if (uploadError) {
         setError("Kunne ikke laste opp bilde: " + uploadError.message);
-        setLoading(false);
         return;
       }
 
-      supabase.storage.from("workout-images").getPublicUrl(filePath);
-
-      imageUrl = filePath;
+      const { data } = supabase.storage
+        .from("workout-images")
+        .getPublicUrl(filePath);
+      imageUrl = data.publicUrl;
     }
 
-    // 🟢 Legg inn økta i databasen
-    const { error } = await supabase.from("workouts").insert([
+    // Use TanStack Query mutation
+    createWorkoutMutation.mutate(
       {
-        user_id: user?.id,
         type,
-        note,
+        note: note || null,
         pr,
         image_url: imageUrl || null,
         date,
       },
-    ]);
-
-    setLoading(false);
-
-    if (error) {
-      setError("Kunne ikke lagre økt: " + error.message);
-    } else {
-      setType("");
-      setNote("");
-      setPr(false);
-      setImageFile(null);
-      if (onCreated) onCreated();
-    }
+      {
+        onSuccess: () => {
+          setType("");
+          setNote("");
+          setPr(false);
+          setImageFile(null);
+          setPreviewUrl(null);
+          if (onCreated) onCreated();
+        },
+        onError: (error) => {
+          setError("Kunne ikke lagre økt: " + error.message);
+        },
+      }
+    );
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow mb-6 text-black">
-      <h2 className="text-lg font-semibold mb-4 ">Logg ny treningsøkt</h2>
-      <div className="mb-3 border rounded flex flex-col items-center gap-2">
-        <input
-          className="w-full bg-[linear-gradient(to_right,_black_23%,_#d1d5db_20%)] rounded-sm text-white p-3  "
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0] || null;
-            setImageFile(file);
-            if (file) {
-              setPreviewUrl(URL.createObjectURL(file));
-            } else {
-              setPreviewUrl(null);
-            }
-          }}
-        />
-
-        {previewUrl && (
-          <Image
-            src={previewUrl}
-            alt="Forhåndsvisning"
-            className=" w-full shadow-lg"
-            width={250}
-            height={50}
+    <div className="space-y-4">
+      {/* Image upload */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-white/80">
+          Bilde (valgfritt)
+        </label>
+        <div className="relative">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setImageFile(file);
+              if (file) {
+                setPreviewUrl(URL.createObjectURL(file));
+              } else {
+                setPreviewUrl(null);
+              }
+            }}
+            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-300 backdrop-blur-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
           />
+        </div>
+        {previewUrl && (
+          <div className="relative rounded-2xl overflow-hidden">
+            <Image
+              src={previewUrl}
+              alt="Forhåndsvisning"
+              className="w-full h-48 object-cover"
+              width={400}
+              height={200}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          </div>
         )}
       </div>
 
-      <input
-        placeholder="Type (f.eks. styrke, løping)"
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-        className="w-full p-3 border rounded mb-3"
-      />
-
-      <textarea
-        placeholder="Notat (valgfritt)"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        className="w-full p-3 border rounded mb-3"
-      />
-
-      <label className="flex items-center gap-2 mb-4">
+      {/* Workout type */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-white/80">
+          Type økt
+        </label>
         <input
-          type="checkbox"
-          checked={pr}
-          onChange={(e) => setPr(e.target.checked)}
+          placeholder="Type (f.eks. styrke, løping)"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-300 backdrop-blur-sm"
         />
-        <span>Personlig rekord (PR)?</span>
-      </label>
-      <label className="block mb-3">
-        <span className="block mb-1">Når ble økten gjennomført?</span>
+      </div>
+
+      {/* Notes */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-white/80">
+          Notater (valgfritt)
+        </label>
+        <textarea
+          placeholder="Beskriv økten din..."
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-300 backdrop-blur-sm resize-none"
+        />
+      </div>
+
+      {/* PR checkbox */}
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={pr}
+            onChange={(e) => setPr(e.target.checked)}
+            className="w-5 h-5 bg-white/10 border border-white/20 rounded text-blue-500 focus:ring-blue-500 focus:ring-2"
+          />
+          <span className="text-white/80 font-medium">
+            Personlig rekord (PR) 🏆
+          </span>
+        </label>
+      </div>
+
+      {/* Date selection */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-white/80">
+          Når ble økten gjennomført?
+        </label>
         <select
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full p-3 border rounded"
+          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-300 backdrop-blur-sm"
         >
           {last7Days.map((d) => (
-            <option key={d.value} value={d.value}>
+            <option
+              key={d.value}
+              value={d.value}
+              className="bg-gray-800 text-white"
+            >
               {d.label.charAt(0).toUpperCase() + d.label.slice(1)}
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-3 backdrop-blur-sm">
+          <p className="text-red-200 text-sm text-center">{error}</p>
+        </div>
+      )}
 
+      {/* Submit button */}
       <button
         onClick={handleSubmit}
-        disabled={loading}
-        className="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition"
+        disabled={createWorkoutMutation.isPending}
+        className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none disabled:shadow-none"
       >
-        {loading ? "Lagrer..." : "Lagre økt"}
+        {createWorkoutMutation.isPending ? (
+          <div className="flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+            Lagrer...
+          </div>
+        ) : (
+          "Lagre økt"
+        )}
       </button>
     </div>
   );

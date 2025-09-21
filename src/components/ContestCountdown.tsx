@@ -1,15 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Fixed challenge period
+// Wedding competition period
 function getChallengeStartDate(): Date {
-  return new Date("2025-05-23T00:00:00Z");
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0); // Start of tomorrow
+  return tomorrow;
 }
 
 function getChallengeEndDate(): Date {
-  const end = new Date(getChallengeStartDate());
-  end.setDate(end.getDate() + 28); // 4 weeks
-  return end;
+  return new Date("2026-06-20T23:59:59Z"); // Wedding day
 }
 
 function getTimeDiff(target: Date) {
@@ -48,56 +49,79 @@ export default function ContestCountdown({
     return () => clearInterval(interval);
   }, [target]);
 
-  const totalInitialSeconds = 28 * 24 * 3600; // 4 uker
-  const percent = 100 - (timeLeft.totalSeconds / totalInitialSeconds) * 100;
+  const startDate = getChallengeStartDate();
+  const endDate = getChallengeEndDate();
+  const totalDuration = endDate.getTime() - startDate.getTime();
+  const elapsed = endDate.getTime() - new Date().getTime();
+  const percent = Math.max(
+    0,
+    Math.min(100, ((totalDuration - elapsed) / totalDuration) * 100)
+  );
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-      <div className="w-72 h-72 relative flex flex-col items-center justify-center rounded-full bg-gray-800 shadow-xl">
+    <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl text-center">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white mb-2">
+          💒 Bryllupskonkurranse
+        </h2>
+        <p className="text-white/70 text-sm">
+          Konkurransen starter i morgen og varer til bryllupet 20. juni 2026!
+        </p>
+      </div>
+
+      <div className="w-48 h-48 relative flex flex-col items-center justify-center rounded-full bg-white/10 shadow-xl mx-auto mb-6">
         <svg className="absolute w-full h-full transform -rotate-90">
           <circle
             cx="50%"
             cy="50%"
-            r="135"
-            stroke=""
-            strokeWidth="12"
+            r="90"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="8"
             fill="none"
           />
           <circle
             cx="50%"
             cy="50%"
-            r="135"
-            stroke="red"
-            strokeWidth="12"
-            strokeDasharray={`${Math.PI * 2 * 135}`}
-            strokeDashoffset={`${Math.PI * 2 * 135 * (percent / 100)}`}
+            r="90"
+            stroke="url(#gradient)"
+            strokeWidth="8"
+            strokeDasharray={`${Math.PI * 2 * 90}`}
+            strokeDashoffset={`${Math.PI * 2 * 90 * (percent / 100)}`}
             strokeLinecap="round"
             fill="none"
           />
+          <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#fbbf24" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#d97706" />
+            </linearGradient>
+          </defs>
         </svg>
         <div className="text-center z-10">
-          <h2 className="text-xl mb-1">GJENSTÅENDE TID</h2>
-          <p className="text-5xl font-bold">{timeLeft.days}d</p>
-          <p className="text-lg">
+          <h3 className="text-lg mb-2 text-white/80">Gjenstående tid</h3>
+          <p className="text-4xl font-bold text-white">{timeLeft.days}d</p>
+          <p className="text-sm text-white/70">
             {timeLeft.hours}t {timeLeft.minutes}m {timeLeft.seconds}s
           </p>
         </div>
       </div>
+
       {checkedEnlistment && (
         <button
-          className={`mt-6 py-2 px-6 rounded-full text-lg font-semibold disabled:opacity-60 ${
+          className={`py-3 px-8 rounded-2xl text-lg font-semibold transition-all duration-300 ${
             isEnlisted
-              ? "border-red-500 border-2 text-white cursor-default"
-              : "bg-blue-500 text-white border-red-500"
+              ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white cursor-default"
+              : "bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white transform hover:scale-105"
           }`}
           onClick={isEnlisted ? undefined : handleEnlist}
           disabled={loadingEnlist || isEnlisted}
         >
           {isEnlisted
-            ? "Du er påmeldt!"
+            ? "🎉 Du er påmeldt!"
             : loadingEnlist
-            ? "Enlisting..."
-            : "Enter Contest"}
+            ? "Melder på..."
+            : "💒 Meld deg på bryllupskonkurranse"}
         </button>
       )}
     </div>

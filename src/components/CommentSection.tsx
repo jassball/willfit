@@ -1,17 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PiTrash } from "react-icons/pi";
-import { supabase } from "@/lib/supabaseClient"; // Tilpass til din Supabase-klient
-
 import { AvatarImage } from "@/components/AvatarImage";
-
-type Comment = {
-  id: string;
-  user_id: string;
-  username: string;
-  avatar_url?: string | null;
-  content: string;
-  created_at: string;
-};
+import {
+  useComments,
+  useAddComment,
+  useDeleteComment,
+} from "@/hooks/useComments";
 
 type CommentSectionProps = {
   workoutId: string;
@@ -29,159 +23,120 @@ function CommentSection({
   visible = true,
   readOnly = false,
 }: CommentSectionProps) {
-  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  // Hent kommentarer når komponenten mountes
-  useEffect(() => {
-    fetchComments();
-  }, []);
+  // TanStack Query hooks
+  const { data: comments = [], isLoading } = useComments(workoutId);
+  const addCommentMutation = useAddComment();
+  const deleteCommentMutation = useDeleteComment();
 
-  const fetchComments = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("comments")
-      .select(
-        `
-        id,
-        user_id,
-        content,
-        created_at,
-        profiles (username, avatar_url)
-      `
-      )
-      .eq("workout_id", workoutId)
-      .order("created_at", { ascending: true });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || addCommentMutation.isPending) return;
 
-    if (error) {
-      console.error("Error fetching comments:", error);
-    } else {
-      const formattedComments = (
-        data as {
-          id: string;
-          user_id: string;
-          content: string;
-          created_at: string;
-          profiles: { username?: string; avatar_url?: string | null } | null;
-        }[]
-      ).map((comment) => ({
-        id: comment.id,
-        user_id: comment.user_id,
-        content: comment.content,
-        created_at: comment.created_at,
-        username: comment.profiles?.username || "Ukjent",
-        avatar_url: comment.profiles?.avatar_url || null,
-      }));
-      setComments(formattedComments);
-    }
-    setLoading(false);
+    addCommentMutation.mutate(
+      { workoutId, content: newComment },
+      {
+        onSuccess: () => {
+          setNewComment("");
+        },
+      }
+    );
   };
 
-  const handleAddComment = async () => {
-    if (newComment.trim() === "") return;
-
-    const { error } = await supabase.from("comments").insert({
-      workout_id: workoutId,
-      user_id: currentUserId,
-      content: newComment.trim(),
-    });
-
-    if (error) {
-      console.error("Error adding comment:", error);
-    } else {
-      setNewComment("");
-      fetchComments();
+  const handleDelete = (commentId: string) => {
+    if (confirm("Er du sikker på at du vil slette denne kommentaren?")) {
+      deleteCommentMutation.mutate(commentId);
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    const { error } = await supabase
-      .from("comments")
-      .delete()
-      .eq("id", commentId);
-
-    if (error) {
-      console.error("Error deleting comment:", error);
-    } else {
-      fetchComments();
-    }
-  };
-
-  const canDelete = (commentUserId: string) =>
-    currentUserId === commentUserId || currentUserId === workoutOwnerId;
+  if (!visible) return null;
 
   return (
-    <div
-      className={
-        visible
-          ? "px-6 py-3 rounded-full shadow-lg backdrop-blur-sm bg-[rgba(1,0,0,0.44)] mt-2 flex flex-col gap-2"
-          : "hidden"
-      }
-    >
-      {/* Input for å legge til kommentar */}
+    <div className="px-4 py-3 backdrop-blur-xl bg-white/5 border-t border-white/10 flex flex-col gap-3">
+      {/* Comment input */}
       {!readOnly && (
-        <form onSubmit={handleAddComment} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Skriv en kommentar..."
-            className="flex-1 px-3 py-2 rounded-full bg-white/80 text-black focus:outline-none"
-          />
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Skriv en kommentar..."
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-300 backdrop-blur-sm"
+              disabled={addCommentMutation.isPending}
+            />
+          </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex items-center justify-center"
-            aria-label="Send"
+            disabled={!newComment.trim() || addCommentMutation.isPending}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:from-blue-600 hover:to-purple-600 flex items-center justify-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 10.5l7.5 7.5m0 0l7.5-7.5m-7.5 7.5V3"
-              />
-            </svg>
+            {addCommentMutation.isPending ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              "Send"
+            )}
           </button>
         </form>
       )}
 
-      {/* Kommentarer */}
-      {loading ? (
-        <div className="italic text-white">Laster kommentarer...</div>
-      ) : comments.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex justify-between">
-              <div className="flex items-center gap-2">
-                <AvatarImage avatarPath={comment.avatar_url} />
-                <div>
-                  <span className="text-xs text-white font-semibold">
-                    @{comment.username}
-                  </span>
-                  <p className="text-sm text-white">{comment.content}</p>
+      {/* Comments list */}
+      <div className="space-y-3">
+        {isLoading ? (
+          <div className="text-center py-4">
+            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+            <p className="text-white/60 text-sm mt-2">Laster kommentarer...</p>
+          </div>
+        ) : comments.length === 0 ? (
+          <p className="text-white/60 text-sm text-center py-4">
+            Ingen kommentarer ennå.
+          </p>
+        ) : (
+          comments.map((comment) => (
+            <div
+              key={comment.id}
+              className="p-3 rounded-2xl bg-white/5 border border-white/10"
+            >
+              <div className="flex items-start gap-3">
+                <AvatarImage avatarPath={comment.profile.avatar_url} size={8} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-white font-medium text-sm">
+                      {comment.profile.first_name} {comment.profile.last_name}
+                    </p>
+                    <p className="text-white/60 text-xs">
+                      @{comment.profile.username}
+                    </p>
+                    <p className="text-white/40 text-xs">
+                      {new Date(comment.created_at).toLocaleDateString(
+                        "nb-NO",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  </div>
+                  <p className="text-white/80 text-sm">{comment.content}</p>
                 </div>
+                {(currentUserId === comment.user_id ||
+                  currentUserId === workoutOwnerId) && (
+                  <button
+                    onClick={() => handleDelete(comment.id)}
+                    className="p-1 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
+                    title="Slett kommentar"
+                  >
+                    <PiTrash className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              {canDelete(comment.user_id) && (
-                <button
-                  onClick={() => handleDeleteComment(comment.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <PiTrash />
-                </button>
-              )}
             </div>
-          ))}
-        </div>
-      ) : (
-        <p></p>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

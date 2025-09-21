@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/AuthProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import QueryProvider from "@/components/QueryProvider";
 
 export const metadata: Metadata = {
   title: "Willfit",
@@ -32,9 +33,11 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body>
-        <AuthProvider>
-          <ProtectedRoute>{children}</ProtectedRoute>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <ProtectedRoute>{children}</ProtectedRoute>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

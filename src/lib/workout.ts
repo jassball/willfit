@@ -23,7 +23,23 @@ export type Workout = {
   comments?: { id: string }[];
 };
 
-// Toggle kudos for en workout (gi eller fjern)
+// Create a new workout
+export async function createWorkout(workoutData: {
+  type: string;
+  note: string | null;
+  pr: boolean;
+  image_url: string | null;
+  date: string;
+}) {
+  const { data, error } = await supabase
+    .from("workouts")
+    .insert([workoutData])
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
 
 // Slett en workout
 export async function deleteWorkout(workoutId: string) {

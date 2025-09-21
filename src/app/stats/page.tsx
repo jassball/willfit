@@ -1,61 +1,17 @@
 "use client";
 import { Navbar } from "@/components";
-import { AvatarImage } from "@/components/AvatarImage";
-import { fetchAllWorkouts, Workout } from "@/lib/workout";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import ContestCountdown from "@/components/ContestCountdown";
-
-function getChallengeStartDate() {
-  return "2025-05-23";
-}
-
-type LeaderboardUser = {
-  user_id: string;
-  count: number;
-  profile: Workout["profile"];
-};
+import Leaderboard from "@/components/Leaderboard";
 
 export default function StatsPage() {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
   const [isEnlisted, setIsEnlisted] = useState<boolean>(false);
   const [loadingEnlist, setLoadingEnlist] = useState(false);
   const [checkedEnlistment, setCheckedEnlistment] = useState(false);
-
-  useEffect(() => {
-    async function loadLeaderboard() {
-      try {
-        const workouts = await fetchAllWorkouts(false);
-        const challengeStart = new Date(getChallengeStartDate());
-
-        const filtered = workouts.filter(
-          (w) => new Date(w.date) >= challengeStart
-        );
-
-        const userMap: Record<string, LeaderboardUser> = {};
-        for (const w of filtered) {
-          const uid = w.user_id;
-          if (!userMap[uid]) {
-            userMap[uid] = {
-              user_id: uid,
-              count: 0,
-              profile: w.profile,
-            };
-          }
-          userMap[uid].count++;
-        }
-
-        const sorted = Object.values(userMap).sort((a, b) => b.count - a.count);
-        setLeaderboard(sorted);
-      } catch (error) {
-        console.error("Feil under lasting av leaderboard:", error);
-        setLeaderboard([]);
-      }
-    }
-    loadLeaderboard();
-  }, []);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     async function fetchEnlistment() {
@@ -76,6 +32,16 @@ export default function StatsPage() {
     fetchEnlistment();
   }, [user]);
 
+  // Add floating animation effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   async function handleEnlist() {
     if (!user) return;
     setLoadingEnlist(true);
@@ -88,91 +54,81 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-black">
-      <Navbar />
-      <div className="w-full max-w-md mt-10 bg-gray-900 rounded-3xl shadow-lg p-4 relative mx-auto">
-        <ContestCountdown
-          isEnlisted={isEnlisted}
-          handleEnlist={handleEnlist}
-          loadingEnlist={loadingEnlist}
-          checkedEnlistment={checkedEnlistment}
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+      {/* Animated background elements */}
+      <div className="absolute inset-0">
+        {/* Floating orbs */}
+        <div
+          className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
+          style={{
+            left: `${mousePosition.x * 0.05}px`,
+            top: `${mousePosition.y * 0.05}px`,
+            transform: "translate(-50%, -50%)",
+          }}
         />
+        <div
+          className="absolute w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"
+          style={{
+            right: `${mousePosition.x * 0.03}px`,
+            bottom: `${mousePosition.y * 0.03}px`,
+            transform: "translate(50%, 50%)",
+          }}
+        />
+        <div
+          className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"
+          style={{
+            left: `${50 + mousePosition.x * 0.01}%`,
+            top: `${30 + mousePosition.y * 0.01}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+      </div>
 
-        <h1 className="text-xl font-bold text-center mb-6 text-white mt-8">
-          Leaderboard
-        </h1>
+      {/* Main content */}
+      <div className="relative z-10 min-h-screen">
+        <Navbar />
 
-        <div className="bg-gray-900 rounded-2xl p-2 shadow-md">
-          {leaderboard.length === 0
-            ? [...Array(10)].map((_, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center py-3 px-3 border-b border-gray-800 last:border-b-0 animate-pulse"
+        <div className="px-4 py-8">
+          <div className="max-w-md mx-auto space-y-6">
+            {/* Contest Countdown */}
+            <ContestCountdown
+              isEnlisted={isEnlisted}
+              handleEnlist={handleEnlist}
+              loadingEnlist={loadingEnlist}
+              checkedEnlistment={checkedEnlistment}
+            />
+
+            {/* Leaderboard */}
+            <Leaderboard showStreaks={true} maxItems={10} />
+
+            {/* Enlistment button */}
+            {checkedEnlistment && !isEnlisted && (
+              <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-6 shadow-2xl text-center">
+                <h3 className="text-white font-semibold mb-2">
+                  💒 Bli med i bryllupskonkurransen!
+                </h3>
+                <p className="text-white/70 text-sm mb-4">
+                  Konkurransen starter i morgen og varer til bryllupet 20. juni
+                  2026
+                </p>
+                <button
+                  className="w-full py-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none disabled:shadow-none"
+                  onClick={handleEnlist}
+                  disabled={loadingEnlist}
                 >
-                  <div className="w-6 text-gray-500">{idx + 1}</div>
-                  <div className="w-10 h-10 bg-gray-700 rounded-full" />
-                  <div className="ml-3 flex-1">
-                    <div className="h-4 bg-gray-700 rounded w-24 mb-1" />
-                    <div className="h-3 bg-gray-800 rounded w-16" />
-                  </div>
-                  <div className="w-8 h-4 bg-gray-700 rounded ml-auto" />
-                </div>
-              ))
-            : leaderboard.map((user, idx) => {
-                const isFirst = idx === 0;
-                return (
-                  <div
-                    key={user.user_id}
-                    className={`flex items-center ${
-                      isFirst
-                        ? "py-4 px-4 bg-gray-800 rounded-xl mb-2"
-                        : "py-3 px-3"
-                    } border-b border-gray-800 last:border-b-0 hover:bg-gray-800 transition`}
-                  >
-                    <div
-                      className={`w-6 text-gray-400 ${
-                        isFirst ? "text-lg font-bold" : ""
-                      }`}
-                    >
-                      {idx + 1}
+                  {loadingEnlist ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      Melder på...
                     </div>
-                    <AvatarImage
-                      avatarPath={user.profile.avatar_url}
-                      size={isFirst ? 16 : 10}
-                    />
-                    <div className="ml-3 flex-1">
-                      <div
-                        className={`text-white ${
-                          isFirst ? "text-lg font-semibold" : "font-medium"
-                        }`}
-                      >
-                        {user.profile.first_name}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        @{user.profile.username || "bruker"}
-                      </div>
-                    </div>
-                    <div
-                      className={`ml-auto text-white ${
-                        isFirst ? "text-xl font-extrabold" : "font-bold"
-                      }`}
-                    >
-                      {user.count}x
-                    </div>
-                  </div>
-                );
-              })}
+                  ) : (
+                    "💒 Meld deg på bryllupskonkurranse"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-
-        {checkedEnlistment && !isEnlisted && (
-          <button
-            className="w-full mt-6 bg-blue-500 text-white py-3 rounded-full font-semibold text-lg disabled:opacity-60"
-            onClick={handleEnlist}
-            disabled={loadingEnlist}
-          >
-            {loadingEnlist ? "Enlisting..." : "Enter Contest"}
-          </button>
-        )}
       </div>
     </div>
   );
