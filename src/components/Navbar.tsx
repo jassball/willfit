@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Home,
-  User,
-  Plus,
-  BarChart2,
-  Bell,
-  X,
-  Zap,
-  FileText,
-} from "lucide-react";
+import { Home, User, Plus, BarChart2, Bell, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";

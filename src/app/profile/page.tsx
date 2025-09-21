@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
@@ -126,9 +127,11 @@ export default function ProfilePage() {
           <h1 className="text-xl font-bold mb-4">Din profil</h1>
           <div className="flex justify-center">
             {/* Hent signed URL for avatar */}
-            <img
+            <Image
               src={avatarUrl || "/avatar-modified.ico"}
               alt="Profilbilde"
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full shadow-lg "
             />
           </div>

@@ -132,7 +132,7 @@ export default function Leaderboard({
       }
     }
     loadLeaderboard();
-  }, [user?.id, maxItems]);
+  }, [user?.id, maxItems, leaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -161,7 +161,7 @@ export default function Leaderboard({
           text: "Sjekk ut Willfit leaderboard!",
           url: window.location.href,
         });
-      } catch (error) {
+      } catch {
         console.log("Sharing cancelled");
       }
     } else {
@@ -227,7 +227,7 @@ export default function Leaderboard({
             <p className="text-white/60">Ingen data ennå</p>
           </div>
         ) : (
-          leaderboard.map((user, idx) => {
+          leaderboard.map((user) => {
             const isTopThree = user.rank <= 3;
             const hasMovedUp =
               previousLeaderboard.find((p) => p.user_id === user.user_id)

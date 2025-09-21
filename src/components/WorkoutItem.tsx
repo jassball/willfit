@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import CommentSection from "@/components/CommentSection";
 import { Crown, Trophy, Heart, MessageCircle, Trash2 } from "lucide-react";
@@ -91,9 +92,11 @@ export default function WorkoutItem({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <img
+              <Image
                 src={workout.profile.avatar_url || "/avatar-modified.ico"}
                 alt="Avatar"
+                width={48}
+                height={48}
                 className={`w-12 h-12 rounded-full object-cover ${
                   isTopPerformer
                     ? isFirstPlace
@@ -161,9 +164,11 @@ export default function WorkoutItem({
       {/* Image */}
       {workout.image_url && (
         <div className="relative">
-          <img
+          <Image
             src={workout.image_url}
             alt="Workout"
+            width={400}
+            height={256}
             className="w-full h-64 object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

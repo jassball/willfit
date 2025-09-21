@@ -24,6 +24,7 @@ export interface Comment {
   };
 }
 
+
 // Hook to fetch comments for a workout
 export function useComments(workoutId: string) {
   return useQuery({
@@ -50,7 +51,22 @@ export function useComments(workoutId: string) {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      return data as Comment[];
+      
+      // Transform the data to match Comment interface
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return data?.map((comment: any) => ({
+        id: comment.id,
+        workout_id: comment.workout_id,
+        user_id: comment.user_id,
+        content: comment.content,
+        created_at: comment.created_at,
+        profile: {
+          first_name: comment.profile?.first_name || "Unknown",
+          last_name: comment.profile?.last_name || "User",
+          username: comment.profile?.username || "unknown",
+          avatar_url: comment.profile?.avatar_url || null,
+        },
+      })) || [];
     },
     staleTime: 30 * 1000, // 30 seconds
   });
@@ -111,7 +127,7 @@ export function useDeleteComment() {
 
       if (error) throw error;
     },
-    onSuccess: (_, commentId) => {
+    onSuccess: () => {
       // Invalidate all comment queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: commentKeys.all });
     },

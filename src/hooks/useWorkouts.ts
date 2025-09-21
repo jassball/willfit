@@ -3,7 +3,6 @@ import {
   fetchAllWorkouts,
   createWorkout,
   deleteWorkout,
-  Workout,
 } from "@/lib/workout";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -44,7 +43,6 @@ export function useAllWorkouts() {
 // Hook to create a workout
 export function useCreateWorkout() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: createWorkout,
