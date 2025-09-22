@@ -36,7 +36,16 @@ export default function WorkoutFeed({
       .slice(0, 3)
       .map(([userId]) => userId);
 
-    setTopPerformers(new Set(sortedUsers));
+    const newTopPerformers = new Set(sortedUsers);
+
+    // Only update if the set has actually changed
+    setTopPerformers((prev) => {
+      if (prev.size !== newTopPerformers.size) return newTopPerformers;
+      for (const userId of newTopPerformers) {
+        if (!prev.has(userId)) return newTopPerformers;
+      }
+      return prev;
+    });
   }, []);
 
   useEffect(() => {

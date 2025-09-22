@@ -1,9 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchAllWorkouts,
-  createWorkout,
-  deleteWorkout,
-} from "@/lib/workout";
+import { fetchAllWorkouts, createWorkout, deleteWorkout } from "@/lib/workout";
 import { useAuth } from "@/components/AuthProvider";
 
 // Query keys
@@ -43,9 +39,15 @@ export function useAllWorkouts() {
 // Hook to create a workout
 export function useCreateWorkout() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: createWorkout,
+    mutationFn: async (
+      workoutData: Omit<Parameters<typeof createWorkout>[0], "user_id">
+    ) => {
+      if (!user) throw new Error("User not authenticated");
+      return createWorkout({ ...workoutData, user_id: user.id });
+    },
     onSuccess: () => {
       // Invalidate and refetch workouts
       queryClient.invalidateQueries({ queryKey: workoutKeys.all });

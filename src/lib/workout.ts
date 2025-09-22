@@ -25,6 +25,7 @@ export type Workout = {
 
 // Create a new workout
 export async function createWorkout(workoutData: {
+  user_id: string;
   type: string;
   note: string | null;
   pr: boolean;

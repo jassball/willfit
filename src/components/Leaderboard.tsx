@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AvatarImage } from "@/components/AvatarImage";
-import { fetchAllWorkouts, Workout } from "@/lib/workout";
+import { useAllWorkouts } from "@/hooks/useWorkouts";
+import { Workout } from "@/lib/workout";
 import { useAuth } from "@/components/AuthProvider";
 import { Share2, Trophy, Flame, Crown, Medal, Zap } from "lucide-react";
 
@@ -29,12 +30,13 @@ export default function Leaderboard({
   maxItems = 10,
   className = "",
 }: LeaderboardProps) {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
-  const [loading, setLoading] = useState(true);
   const [previousLeaderboard, setPreviousLeaderboard] = useState<
     LeaderboardUser[]
   >([]);
   const { user } = useAuth();
+
+  // Use TanStack Query instead of manual fetching
+  const { data: workouts = [] } = useAllWorkouts();
 
   // Calculate streaks and leaderboard
   const calculateStreaks = (workouts: Workout[]) => {
@@ -82,57 +84,49 @@ export default function Leaderboard({
     return userStreaks;
   };
 
-  useEffect(() => {
-    async function loadLeaderboard() {
-      try {
-        setLoading(true);
-        const workouts = await fetchAllWorkouts(false);
-        const challengeStart = new Date();
-        challengeStart.setDate(challengeStart.getDate() + 1); // Tomorrow
-        challengeStart.setHours(0, 0, 0, 0);
+  // Memoized leaderboard calculation
+  const leaderboard = useMemo(() => {
+    if (!workouts.length) return [];
 
-        const filtered = workouts.filter(
-          (w) => new Date(w.date) >= challengeStart
-        );
+    const challengeStart = new Date();
+    challengeStart.setDate(challengeStart.getDate() + 1); // Tomorrow
+    challengeStart.setHours(0, 0, 0, 0);
 
-        const streaks = calculateStreaks(filtered);
-        const userMap: Record<string, LeaderboardUser> = {};
+    const filtered = workouts.filter((w) => new Date(w.date) >= challengeStart);
 
-        for (const w of filtered) {
-          const uid = w.user_id;
-          if (!userMap[uid]) {
-            userMap[uid] = {
-              user_id: uid,
-              count: 0,
-              streak: streaks[uid] || 0,
-              profile: w.profile,
-              rank: 0,
-              isCurrentUser: user?.id === uid,
-            };
-          }
-          userMap[uid].count++;
-        }
+    const streaks = calculateStreaks(filtered);
+    const userMap: Record<string, LeaderboardUser> = {};
 
-        const sorted = Object.values(userMap)
-          .sort((a, b) => b.count - a.count)
-          .map((user, index) => ({
-            ...user,
-            rank: index + 1,
-          }))
-          .slice(0, maxItems);
-
-        // Store previous leaderboard for animations
-        setPreviousLeaderboard(leaderboard);
-        setLeaderboard(sorted);
-      } catch (error) {
-        console.error("Feil under lasting av leaderboard:", error);
-        setLeaderboard([]);
-      } finally {
-        setLoading(false);
+    for (const w of filtered) {
+      const uid = w.user_id;
+      if (!userMap[uid]) {
+        userMap[uid] = {
+          user_id: uid,
+          count: 0,
+          streak: streaks[uid] || 0,
+          profile: w.profile,
+          rank: 0,
+          isCurrentUser: user?.id === uid,
+        };
       }
+      userMap[uid].count++;
     }
-    loadLeaderboard();
-  }, [user?.id, maxItems, leaderboard]);
+
+    return Object.values(userMap)
+      .sort((a, b) => b.count - a.count)
+      .map((user, index) => ({
+        ...user,
+        rank: index + 1,
+      }))
+      .slice(0, maxItems);
+  }, [workouts, maxItems, user?.id]);
+
+  // Update previous leaderboard for animations
+  useEffect(() => {
+    if (leaderboard.length > 0) {
+      setPreviousLeaderboard(leaderboard);
+    }
+  }, [leaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -171,7 +165,7 @@ export default function Leaderboard({
     }
   };
 
-  if (loading) {
+  if (workouts.length === 0) {
     return (
       <div
         className={`backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-6 ${className}`}
